@@ -1,24 +1,35 @@
 pipeline {
     agent any
+
+    environment {
+        SONARQUBE = 'sonarqube' // Name from Manage Jenkins → System → SonarQube Servers
+    }
+
     stages {
-        stage('Clone') {
+        stage('Checkout') {
             steps {
-                git url: 'https://github.com/Kashimo0054/Jenkins-lab.git', branch: 'main'
+                git branch: 'main', url: 'https://github.com/Kashimo0054/Jenkins-lab.git'
             }
         }
+
         stage('Build') {
             steps {
-                echo 'Building...'
+                echo 'Building the project...'
+                sh 'mvn clean package -DskipTests'
             }
         }
-        stage('Test') {
+
+        stage('SonarQube Scan') {
             steps {
-                echo 'Running tests...'
-            }
-        }
-        stage('Deploy') {
-            steps {
-                echo 'Deploying...'
+                withSonarQubeEnv('sonarqube') {
+                    sh '''
+                        mvn sonar:sonar \
+                        -Dsonar.projectKey=jenkins-lab \
+                        -Dsonar.projectName="Jenkins Lab Project" \
+                        -Dsonar.host.url=$SONAR_HOST_URL \
+                        -Dsonar.login=$SONAR_AUTH_TOKEN
+                    '''
+                }
             }
         }
     }
